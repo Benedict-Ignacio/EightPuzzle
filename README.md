@@ -1,1 +1,1 @@
-# EightPuzzle
+# Eight Puzzle
