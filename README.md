@@ -12,7 +12,9 @@ Arguments a-i create the 8-puzzle, and the heuristic value determines which kind
 - For the Uniform Cost blind search algorithm, type 3.
 
 The program will return the following information:
+- Program tracing from initial state to goal state
 - Depth of the solution
 - Total nodes expanded
 - Maximum queue size
 - Nodes currently in fronter
+- Search runtime
