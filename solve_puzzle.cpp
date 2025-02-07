@@ -11,7 +11,7 @@
 // 00 01 02
 // 10 11 12
 // 20 21 22
-std::pair<int, int> find_tile(std::vector<std::vector<int>> puzzle, int tile) {
+std::pair<int, int> find_tile(const std::vector<std::vector<int>>& puzzle, int tile) {
     for (int i = 0; i < puzzle.size(); i++) {
         for (int j = 0; j < puzzle.at(1).size(); j++) {
             if (puzzle.at(i).at(j) == tile) {
@@ -23,7 +23,8 @@ std::pair<int, int> find_tile(std::vector<std::vector<int>> puzzle, int tile) {
     return {-1, -1};
 }
 
-int heuristic(std::vector<std::vector<int>>& puzzle, int strategy) {
+// h(n) function: returns different values depending on which heuristic strategy to use
+int heuristic(const std::vector<std::vector<int>>& puzzle, int strategy) {
     const std::vector<std::vector<int>> solution = {{1, 2, 3}, 
                                                     {4, 5, 6}, 
                                                     {7, 8, 0}};
@@ -36,6 +37,7 @@ int heuristic(std::vector<std::vector<int>>& puzzle, int strategy) {
             count += abs(p.first-s.first) + abs(p.second-s.second);
         }
         return count;
+
     // Misplaced Tile
     } else if (strategy == 2) {
         int count = 0;
@@ -53,6 +55,7 @@ int heuristic(std::vector<std::vector<int>>& puzzle, int strategy) {
     return 0;
 }
 
+// Structure to store puzzle, depth g(n), and heuristic h(n)
 struct node {
     std::vector<std::vector<int>> puzzle;
     int depth;
@@ -61,13 +64,9 @@ struct node {
     node(std::vector<std::vector<int>> puzzle, int depth, char strategy) : puzzle(puzzle), strategy(strategy), depth(depth) {
         heuristic_val = heuristic(puzzle, strategy);
     }
+    // Function to compare f(n) = g(n) + h(n) values
     bool operator>(const node second) const {
-        if (this->depth + this->heuristic_val > second.depth + second.heuristic_val) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return ((this->depth + this->heuristic_val > second.depth + second.heuristic_val) || (this->depth + this->heuristic_val == second.depth + second.heuristic_val && this->depth > second.depth));
     }
 };
 
@@ -82,7 +81,7 @@ void print(const std::vector<std::vector<int>>& puzzle) {
 }
 
 // Hashing function to put into unique node: if we find a number that's already in the vector, we found a repeated state
-int encode(std::vector<std::vector<int>> puzzle) {
+int encode(const std::vector<std::vector<int>>& puzzle) {
     int sum = 0;
     int factor = 100000000;
 
@@ -96,8 +95,9 @@ int encode(std::vector<std::vector<int>> puzzle) {
     return sum;
 }
 
-// Main searching function
+// General searching function
 void search(node start, const std::vector<std::vector<int>>& solution) {
+    // Store unexplored nodes in queueing function, keep track of already visited nodes using hashmap
     std::priority_queue<node, std::vector<node>, std::greater<node>> queue;
     std::unordered_map<int, std::vector<std::vector<int>>> unique_nodes;
     int max_size = queue.size();
@@ -108,6 +108,11 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
 
     // Main loop: if we break out of the loop, something went wrong.
     while (queue.size() != 0) {
+
+        // Keeps track of the largest queue size we had during search
+        if (max_size < queue.size()) {
+            max_size = queue.size();
+        }
  
         // print(nodes.front());
 
@@ -123,6 +128,7 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
         node curr = queue.top();
         queue.pop();
 
+        // Rest of the code is dedicated to node expanding
         std::pair<int, int> space = find_tile(curr.puzzle, 0);
         
         // Search top: if a tile exists above the space, swap
@@ -131,7 +137,7 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
             std::swap(top_puzzle.at(space.first).at(space.second), top_puzzle.at(space.first - 1).at(space.second));
             node top(top_puzzle, curr.depth + 1, curr.strategy);
 
-            // Check if the created node is already expanded
+            // Check if the created node is already reached
             int key = encode(top.puzzle);
             if (unique_nodes.find(key) == unique_nodes.end()) {
                 unique_nodes[key] = top.puzzle;
@@ -145,7 +151,7 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
             std::swap(bottom_puzzle.at(space.first).at(space.second), bottom_puzzle.at(space.first + 1).at(space.second));
             node bottom(bottom_puzzle, curr.depth + 1, curr.strategy);
 
-            // Check if the created node is already expanded
+            // Check if the created node is already reached
             int key = encode(bottom.puzzle);
             if (unique_nodes.find(key) == unique_nodes.end()) {
                 unique_nodes[key] = bottom.puzzle;
@@ -159,7 +165,7 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
             std::swap(left_puzzle.at(space.first).at(space.second), left_puzzle.at(space.first).at(space.second - 1));
             node left(left_puzzle, curr.depth + 1, curr.strategy);
 
-            // Check if the created node is already expanded
+            // Check if the created node is already reached
             int key = encode(left.puzzle);
             if (unique_nodes.find(key) == unique_nodes.end()) {
                 unique_nodes[key] = left.puzzle;
@@ -173,19 +179,16 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
             std::swap(right_puzzle.at(space.first).at(space.second), right_puzzle.at(space.first).at(space.second + 1));
             node right(right_puzzle, curr.depth + 1, curr.strategy);
 
-            // Check if the created node is already expanded
+            // Check if the created node is already reached
             int key = encode(right.puzzle);
             if (unique_nodes.find(key) == unique_nodes.end()) {
                 unique_nodes[key] = right.puzzle;
                 queue.push(right);
             }
         }
-
-        if (max_size < queue.size()) {
-            max_size = queue.size();
-        }
     }
 
+    // If reaching this point, we reached the failure state
     std::cout << "Solution not found." << std::endl;
 }
 
