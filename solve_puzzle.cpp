@@ -6,6 +6,11 @@
 #include <algorithm>
 #include <unordered_map>
 #include <cmath>
+#include <chrono>
+
+using std::chrono::high_resolution_clock;
+using std::chrono::duration;
+using std::chrono::duration_cast;
 
 // Return the i and j values of a given tile (including empty space) in the 8-puzzle
 // 00 01 02
@@ -79,6 +84,20 @@ struct node {
     }
 };
 
+void print(const std::vector<std::vector<int>>& puzzle) {
+    for (int i = 0; i < puzzle.size(); i++) {
+        for (int j = 0; j < puzzle.at(0).size(); j++) {
+            if (puzzle.at(i).at(j) == 0) {
+                std::cout << "  ";
+            }
+            else {
+                std::cout << puzzle.at(i).at(j) << " ";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
 // Hashing function to put into unique node: if we find a number that's already in the vector, we found a repeated state
 int encode(const std::vector<std::vector<int>>& puzzle) {
     int sum = 0;
@@ -108,6 +127,12 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
     // Main loop: if we break out of the loop, something went wrong.
     while (queue.size() != 0) {
 
+        std::cout << "Current Puzzle State:" << std::endl;
+
+        print(queue.top().puzzle);
+
+        std::cout << "g(n) = " << queue.top().depth << ", h(n) = " << queue.top().heuristic_val << std::endl << std::endl;
+
         // Keeps track of the largest queue size we had during search
         if (max_size < queue.size()) {
             max_size = queue.size();
@@ -115,10 +140,10 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
 
         // If solution found, return depth of goal node, nodes expanded, max queue, and nodes in fronter
         if (queue.top().puzzle == solution) {
-            std::cout << "Solution depth: " << queue.top().depth << std::endl;
-            std::cout << "Nodes expanded: " << unique_nodes.size() << std::endl;
-            std::cout << "Max queue size: " << max_size << std::endl;
-            std::cout << "Nodes in front: " << queue.size() << std::endl;
+            std::cout << "Solution depth:\t" << queue.top().depth << std::endl;
+            std::cout << "Nodes expanded:\t" << unique_nodes.size() << std::endl;
+            std::cout << "Max queue size:\t" << max_size << std::endl;
+            std::cout << "Fronter nodes:\t" << queue.size() << std::endl;
             return;
         }
 
@@ -202,8 +227,31 @@ int main(int arg, char* argv[]) {
 
     // input 1 for manhattan, 2 for misplaced, 3 (or anything else) for uniform
     int strategy = std::stoi(argv[10]);
+
+    std::cout << "----------------------------------------------------------" << std::endl;
+
+    if (strategy == 1) {
+        std::cout << "STRATEGY: Manhattan Distance Heuristic" << std::endl;
+    }
+    else if (strategy == 2) {
+        std::cout << "STRATEGY: Misplaced Tiles Heuristic" << std::endl;
+    }
+    else {
+        std::cout << "STRATEGY: Uniform Cost Search" << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    high_resolution_clock::time_point begin = high_resolution_clock::now();
+
     node start(puzzle, 0, strategy);
     search(start, solution);
+
+    auto timeSpan = duration_cast<duration<double>>(high_resolution_clock::now() - begin);
+
+    std::cout << "Search runtime:\t" << timeSpan.count() << " seconds" << std::endl;
+
+    std::cout << "----------------------------------------------------------" << std::endl;
 
     return 0;
 }
