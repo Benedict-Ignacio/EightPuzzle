@@ -37,9 +37,9 @@ int heuristic(const std::vector<std::vector<int>>& puzzle, int strategy) {
             count += abs(p.first-s.first) + abs(p.second-s.second);
         }
         return count;
-
+    } 
     // Misplaced Tile
-    } else if (strategy == 2) {
+    else if (strategy == 2) {
         int count = 0;
         for (int i = 0; i < puzzle.size(); i++) {
             for (int j = 0; j < puzzle.at(0).size(); j++) { 
@@ -64,21 +64,20 @@ struct node {
     node(std::vector<std::vector<int>> puzzle, int depth, char strategy) : puzzle(puzzle), strategy(strategy), depth(depth) {
         heuristic_val = heuristic(puzzle, strategy);
     }
-    // Function to compare f(n) = g(n) + h(n) values
+    // Function to compare A* values
     bool operator>(const node second) const {
-        return ((this->depth + this->heuristic_val > second.depth + second.heuristic_val) || (this->depth + this->heuristic_val == second.depth + second.heuristic_val && this->depth > second.depth));
+        // If n1's A* > n2 A*
+        if (this->depth + this->heuristic_val > second.depth + second.heuristic_val) {
+            return true;
+        }
+        // If both A* values are equal, prioritize the node with least depth
+        else if (this->depth + this->heuristic_val == second.depth + second.heuristic_val && this->depth > second.depth) {
+            return true;
+        }
+
+        return false;
     }
 };
-
-// Test function to print out every node
-void print(const std::vector<std::vector<int>>& puzzle) {
-    for (int i = 0; i < puzzle.size(); i++) {
-        for (int j = 0; j < puzzle.at(0).size(); j++) {
-            std::cout << puzzle.at(i).at(j) << " ";
-        }
-    }
-    std::cout << std::endl;
-}
 
 // Hashing function to put into unique node: if we find a number that's already in the vector, we found a repeated state
 int encode(const std::vector<std::vector<int>>& puzzle) {
@@ -102,7 +101,7 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
     std::unordered_map<int, std::vector<std::vector<int>>> unique_nodes;
     int max_size = queue.size();
 
-    // Push the puzzle in as the first node
+    // Push the initial state as the first node
     queue.push(start);
     unique_nodes[encode(start.puzzle)] = start.puzzle;
 
@@ -113,10 +112,8 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
         if (max_size < queue.size()) {
             max_size = queue.size();
         }
- 
-        // print(nodes.front());
 
-        // If solution found, return how many nodes we had to expand
+        // If solution found, return depth of goal node, nodes expanded, max queue, and nodes in fronter
         if (queue.top().puzzle == solution) {
             std::cout << "Solution depth: " << queue.top().depth << std::endl;
             std::cout << "Nodes expanded: " << unique_nodes.size() << std::endl;
@@ -193,15 +190,17 @@ void search(node start, const std::vector<std::vector<int>>& solution) {
 }
 
 int main(int arg, char* argv[]) {
+    // Input 9 values (numbers from 0-8, no repeats)
     std::vector<std::vector<int>> puzzle = {{std::stoi(argv[1]), std::stoi(argv[2]), std::stoi(argv[3])},
                                             {std::stoi(argv[4]), std::stoi(argv[5]), std::stoi(argv[6])},
                                             {std::stoi(argv[7]), std::stoi(argv[8]), std::stoi(argv[9])}};
-                
+    
+    // Solution matrix (for 8-puzzle)
     const std::vector<std::vector<int>> solution = {{1, 2, 3}, 
                                                     {4, 5, 6}, 
                                                     {7, 8, 0}};
 
-    // input 1 for manhattan, 2 for misplaced, 3 for uniform
+    // input 1 for manhattan, 2 for misplaced, 3 (or anything else) for uniform
     int strategy = std::stoi(argv[10]);
     node start(puzzle, 0, strategy);
     search(start, solution);
